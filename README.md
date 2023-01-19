@@ -2,7 +2,7 @@
 Created 3 ec-2 with ELB and Apache inside
 
 Result:
-![prove created.png](prove created.png)
+![prove.png](prove.png)
 ![img.png](img.png)
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
