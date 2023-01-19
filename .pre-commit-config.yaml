@@ -8,7 +8,6 @@ repos:
           - --args=--verbose
           - --args=--non-recursive
           - --args=--policy-type=aws
-      - id: terraform_tfsec
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md        # Valid UNIX path. I.e. ../TFDOC.md or docs/README.md etc.

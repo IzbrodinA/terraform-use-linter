@@ -1,60 +1,34 @@
-resource "aws_instance" "this" {
-  count = !var.create_spot_instance ? var.number_instances : 0
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
 
-  ami                  = var.ami
-  instance_type        = var.instance_type
-  monitoring           = true
-  ebs_optimized        = true
-  iam_instance_profile = "test"
-  subnet_id            = aws_subnet.my_subnet.id
-  vpc_security_group_ids = toset([aws_default_security_group.default.id])
-
-  tags = {
-    Name = var.instance_name
-  }
-  root_block_device {
-    encrypted = true
-  }
-  metadata_options {
-    http_endpoint = "enabled"
-    http_tokens   = "required"
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
 }
 
-resource "aws_spot_instance_request" "this" {
-  count         = var.create_spot_instance ? var.number_instances : 0
-  ami           = var.ami
+resource "aws_instance" "app" {
+  count = var.instance_count
+
+  ami           = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type
-  tags          = {
-    Name = var.instance_name
-  }
-}
 
-resource "aws_vpc" "my_vpc" {
-  cidr_block = "172.16.0.0/16"
+  subnet_id              = var.subnet_ids[count.index % length(var.subnet_ids)]
+  vpc_security_group_ids = var.security_group_ids
 
-  tags = {
-    Name = "tf-example"
-  }
-}
-
-resource "aws_subnet" "my_subnet" {
-  vpc_id            = aws_vpc.my_vpc.id
-  cidr_block        = "172.16.10.0/24"
-  availability_zone = "us-west-2a"
+  user_data = <<-EOF
+    #!/bin/bash
+    sudo yum update -y
+    sudo yum install httpd -y
+    sudo systemctl enable httpd
+    sudo systemctl start httpd
+    echo "<html><body><div>Hello, world!</div></body></html>" > /var/www/html/index.html
+    EOF
 
   tags = {
-    Name = "tf-example"
+    Terraform   = "true"
+    Project     = var.project_name
+    Environment = var.environment
   }
-}
-
-resource "aws_default_security_group" "default" {
-  vpc_id = aws_vpc.my_vpc.id
-}
-
-resource "aws_flow_log" "example" {
-  iam_role_arn    = var.iam_role_name
-  log_destination = var.log_destination
-  traffic_type    = "ALL"
-  vpc_id          = aws_vpc.my_vpc.id
 }
